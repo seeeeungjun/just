@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>侍 - SAMURAI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Serif JP', serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* 로딩 스크린 */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: all 1s ease;
+        }
+
+        .loading-kanji {
+            font-size: 8rem;
+            font-weight: 900;
+            color: #c41e3a;
+            text-shadow: 0 0 50px rgba(196, 30, 58, 0.8);
+            animation: kanjiGlow 2s ease-in-out infinite alternate;
+        }
+
+        .loading-text {
+            font-size: 1.5rem;
+            margin-top: 20px;
+            color: #c41e3a;
+            letter-spacing: 0.2em;
+        }
+
+        @keyframes kanjiGlow {
+            0% { filter: drop-shadow(0 0 20px rgba(196, 30, 58, 0.5)); }
+            100% { filter: drop-shadow(0 0 40px rgba(196, 30, 58, 1)); }
+        }
+
+        /* 인트로 섹션 */
+        .intro-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+            overflow: hidden;
+        }
+
+        .intro-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1002;
+        }
+
+        .intro-title {
+            font-size: 6rem;
+            font-weight: 900;
+            color: #c41e3a;
+            text-shadow: 0 0 30px rgba(196, 30, 58, 0.8);
+            margin-bottom: 20px;
+            opacity: 0;
+        }
+
+        .intro-subtitle {
+            font-size: 1.5rem;
+            color: #fff;
+            opacity: 0;
+            letter-spacing: 0.3em;
+        }
+
+        /* 칼 베기 효과 */
+        .sword-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1001; pointer-events: none; }
+        
+        /* 완벽한 카타나 모양 - 이미지 사용 */
+        .sword {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 400px;
+            height: 200px;
+            background-image: url('image/다운로드.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transform: translate(-50%, -50%) rotate(-45deg) scaleX(1);
+            transform-origin: center;
+            border: none;
+        }
+        
+        .sword-handle {
+            display: none;
+        }
+        
+        .sword-guard {
+            display: none;
+        }
+        
+        /* 위에서 아래로 베는 선 */
+        .vertical-slash {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 8px;
+            height: 0;
+            background: linear-gradient(to bottom, transparent, #c41e3a, #c41e3a, #c41e3a, transparent);
+            transform: translateX(-50%);
+            filter: blur(0.5px);
+            box-shadow: 0 0 40px rgba(196,30,58,1), 0 0 20px rgba(255,255,255,0.5);
+            opacity: 0;
+        }
+
+        .slash-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .slash-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #c41e3a;
+            border-radius: 50%;
+            opacity: 0;
+            box-shadow: 0 0 10px rgba(196, 30, 58, 0.8);
+        }
+
+        /* 베인 자리 열림 효과 */
+        .split-vertical {
+            position: absolute;
+            top: 0;
+            width: 50vw;
+            height: 100vh;
+            z-index: 1004;
+            will-change: transform, opacity, filter;
+        }
+        .split-left {
+            left: 0;
+            background: inherit;
+            border-right: 2px solid rgba(196,30,58,0.5);
+        }
+        .split-right {
+            right: 0;
+            background: inherit;
+            border-left: 2px solid rgba(196,30,58,0.5);
+        }
+
+        /* 메인 컨테이너 */
+        .main-container {
+            position: relative;
+            width: 100vw;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+            opacity: 0;
+        }
+
+        /* 네비게이션 */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid rgba(196, 30, 58, 0.3);
+        }
+
+        .nav-logo {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #c41e3a;
+            text-shadow: 0 0 20px rgba(196, 30, 58, 0.5);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-menu li {
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: rgba(196, 30, 58, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(196, 30, 58, 0.3);
+            color: #fff;
+        }
+
+        .nav-menu li:hover {
+            background: rgba(196, 30, 58, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(196, 30, 58, 0.3);
+        }
+
+        /* 섹션들 */
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 100px 20px;
+        }
+
+        .hero-section {
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #c41e3a;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(196, 30, 58, 0.8);
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            color: #fff;
+            opacity: 0.8;
+        }
+
+        .cta-button {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, #c41e3a, #8b0000);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(196, 30, 58, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(196, 30, 58, 0.5);
+        }
+
+        /* 콘텐츠 섹션 */
+        .content-section {
+            background: rgba(196, 30, 58, 0.05);
+            border-top: 1px solid rgba(196, 30, 58, 0.2);
+            border-bottom: 1px solid rgba(196, 30, 58, 0.2);
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .content-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(196, 30, 58, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(196, 30, 58, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #c41e3a;
+            margin-bottom: 15px;
+        }
+
+        .card-text {
+            color: #fff;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        /* 푸터 */
+        .footer {
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 1px solid rgba(196, 30, 58, 0.3);
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .footer-text {
+            color: #fff;
+            opacity: 0.6;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .nav-menu {
+                display: none;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 베는 임펙트 효과 */
+        .slash-impact {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(196,30,58,0.3) 0%, transparent 70%);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1003;
+        }
+        
+        .impact-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.2);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1002;
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 스크린 -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-kanji">侍</div>
+        <div class="loading-text">SAMURAI</div>
+    </div>
+
+    <!-- 인트로 섹션 -->
+    <div class="intro-section" id="introSection">
+        <div class="intro-content">
+            <h1 class="intro-title">侍</h1>
+            <p class="intro-subtitle">SAMURAI SPIRIT</p>
+        </div>
+        <div class="sword-container">
+            <div class="sword" id="sword"></div>
+            <div class="sword-handle" id="swordHandle"></div>
+            <div class="sword-guard" id="swordGuard"></div>
+            <div class="vertical-slash" id="verticalSlash"></div>
+            <div class="slash-particles" id="slashParticles"></div>
+            <div class="slash-impact" id="slashImpact"></div>
+            <div class="impact-flash" id="impactFlash"></div>
+            <div class="split-vertical split-left" id="splitLeft"></div>
+            <div class="split-vertical split-right" id="splitRight"></div>
+        </div>
+    </div>
+
+    <!-- 메인 컨테이너 -->
+    <div class="main-container" id="mainContainer">
+        <!-- 네비게이션 -->
+        <nav class="nav">
+            <div class="nav-logo">侍</div>
+            <ul class="nav-menu">
+                <li>Home</li>
+                <li>About</li>
+                <li>Gallery</li>
+                <li>Contact</li>
+            </ul>
+        </nav>
+
+        <!-- 히어로 섹션 -->
+        <section class="section hero-section">
+            <div class="hero-content">
+                <h1 class="hero-title">侍道</h1>
+                <p class="hero-subtitle">The Way of the Samurai</p>
+                <button class="cta-button">Enter the Dojo</button>
+            </div>
+        </section>
+
+        <!-- 콘텐츠 섹션 -->
+        <section class="section content-section">
+            <div class="content-grid">
+                <div class="content-card">
+                    <h3 class="card-title">武士道</h3>
+                    <p class="card-text">The samurai code of conduct, emphasizing loyalty, honor, and self-discipline.</p>
+                </div>
+                <div class="content-card">
+                    <h3 class="card-title">剣術</h3>
+                    <p class="card-text">The art of swordsmanship, requiring years of dedicated practice and mastery.</p>
+                </div>
+                <div class="content-card">
+                    <h3 class="card-title">禅</h3>
+                    <p class="card-text">Zen meditation and philosophy, essential for mental clarity and focus.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 푸터 -->
+        <footer class="footer">
+            <p class="footer-text">© 2024 侍 - SAMURAI. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        class SamuraiIntro {
+            constructor() {
+                this.init();
+                this.simulateLoading();
+            }
+
+            init() {
+                this.loadingScreen = document.getElementById('loadingScreen');
+                this.introSection = document.getElementById('introSection');
+                this.mainContainer = document.getElementById('mainContainer');
+                this.sword = document.getElementById('sword');
+                this.verticalSlash = document.getElementById('verticalSlash');
+                this.slashParticles = document.getElementById('slashParticles');
+                this.slashImpact = document.getElementById('slashImpact');
+                this.impactFlash = document.getElementById('impactFlash');
+                this.splitLeft = document.getElementById('splitLeft');
+                this.splitRight = document.getElementById('splitRight');
+            }
+
+            simulateLoading() {
+                setTimeout(() => {
+                    this.loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        this.loadingScreen.style.display = 'none';
+                        this.startIntro();
+                    }, 1000);
+                }, 2000);
+            }
+
+            startIntro() {
+                // 인트로 애니메이션
+                gsap.to('.intro-title', {
+                    opacity: 1,
+                    duration: 1,
+                    ease: 'power2.out'
+                });
+
+                gsap.to('.intro-subtitle', {
+                    opacity: 1,
+                    duration: 1,
+                    delay: 0.5,
+                    ease: 'power2.out'
+                });
+
+                // 3초 후 칼 베기 애니메이션
+                setTimeout(() => {
+                    this.slashAnimation();
+                }, 3000);
+            }
+
+            slashAnimation() {
+                // 1단계: 칼이 나타남
+                gsap.to([this.sword], {
+                    scaleX: 1,
+                    duration: 0.3,
+                    ease: 'power2.out',
+                    onComplete: () => {
+                        // 2단계: 칼을 화면 맨 위로 올림
+                        gsap.to([this.sword], {
+                            y: '-100vh',
+                            rotation: -45,
+                            duration: 0.8,
+                            ease: 'power2.inOut',
+                            onComplete: () => {
+                                // 3단계: 검이 베는 동작을 하며 내려옴
+                                this.performSwordSlash();
+                            }
+                        });
+                    }
+                });
+            }
+            
+            performSwordSlash() {
+                // 검이 베는 동작을 하며 내려오는 애니메이션
+                const swordGroup = [this.sword];
+                
+                // 검이 베는 동작 (회전하면서 맨 아래까지 내려옴)
+                gsap.to(swordGroup, {
+                    y: '100vh',
+                    rotation: 45,
+                    duration: 0.6,
+                    ease: 'power2.inOut',
+                    onUpdate: () => {
+                        // 검이 베는 중일 때 베기 선 효과 - 화면 전체를 베도록
+                        const currentY = gsap.getProperty(swordGroup[0], 'y');
+                        const progress = (currentY + 100) / 200; // -100vh에서 100vh까지
+                        if (progress > 0.1 && progress < 0.9) {
+                            gsap.set(this.verticalSlash, {
+                                height: '100vh',
+                                opacity: 1,
+                                scaleY: 1.2
+                            });
+                        } else {
+                            gsap.set(this.verticalSlash, {
+                                opacity: 0,
+                                scaleY: 1
+                            });
+                        }
+                    },
+                    onComplete: () => {
+                        // 베기 완료 시 임펙트 효과
+                        this.createSlashImpact();
+                        
+                        // 베기 완료 후 파티클 효과
+                        this.createSlashParticles();
+                        
+                        // 검 숨기기
+                        gsap.to(swordGroup, { 
+                            scaleX: 0, duration: 0.3, delay: 0.2 
+                        });
+                        
+                        // 베인 자리 열리기
+                        setTimeout(() => { this.splitScreen(); }, 600);
+                    }
+                });
+            }
+            
+            createSlashImpact() {
+                // 베는 순간의 임펙트 효과
+                gsap.to(this.impactFlash, {
+                    opacity: 1,
+                    duration: 0.1,
+                    ease: 'power2.out',
+                    onComplete: () => {
+                        gsap.to(this.impactFlash, {
+                            opacity: 0,
+                            duration: 0.2,
+                            ease: 'power2.in'
+                        });
+                    }
+                });
+                
+                gsap.to(this.slashImpact, {
+                    opacity: 1,
+                    duration: 0.2,
+                    ease: 'power2.out',
+                    onComplete: () => {
+                        gsap.to(this.slashImpact, {
+                            opacity: 0,
+                            duration: 0.4,
+                            ease: 'power2.in'
+                        });
+                    }
+                });
+            }
+
+            createSlashParticles() {
+                // 베인 자리에서 파티클 효과
+                for (let i = 0; i < 40; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'slash-particle';
+                    particle.style.left = '50%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    this.slashParticles.appendChild(particle);
+                    
+                    const x = (Math.random() - 0.5) * 200;
+                    const y = (Math.random() - 0.5) * 100;
+                    
+                    gsap.to(particle, {
+                        x: x,
+                        y: y,
+                        opacity: 1,
+                        duration: 1,
+                        ease: 'power2.out',
+                        onComplete: () => {
+                            gsap.to(particle, { 
+                                opacity: 0,
+                                duration: 0.5, 
+                                onComplete: () => { particle.remove(); } 
+                            });
+                        }
+                    });
+                }
+            }
+
+            splitScreen() {
+                // 베인 자리에서 좌우로 열리기
+                this.splitLeft.style.background = window.getComputedStyle(this.introSection).background;
+                this.splitRight.style.background = window.getComputedStyle(this.introSection).background;
+                this.splitLeft.style.opacity = 1;
+                this.splitRight.style.opacity = 1;
+                
+                gsap.set(this.splitLeft, { x: 0, filter: 'blur(0px)' });
+                gsap.set(this.splitRight, { x: 0, filter: 'blur(0px)' });
+                
+                gsap.to(this.splitLeft, { 
+                    x: '-50vw',
+                    opacity: 0,
+                    filter: 'blur(20px)', 
+                    duration: 1.5,
+                    ease: 'power2.in' 
+                });
+                gsap.to(this.splitRight, { 
+                    x: '50vw',
+                    opacity: 0,
+                    filter: 'blur(20px)', 
+                    duration: 1.5,
+                    ease: 'power2.in' 
+                });
+                
+                gsap.to(this.verticalSlash, { 
+                    opacity: 0,
+                    delay: 1.2,
+                    duration: 0.5 
+                });
+                
+                gsap.to(this.introSection, {
+                    opacity: 0,
+                    duration: 1.5,
+                    delay: 1.2, 
+                    onComplete: () => {
+                        gsap.to(this.mainContainer, { 
+                            opacity: 1,
+                            duration: 1,
+                            ease: 'power2.out' 
+                        });
+                        setTimeout(() => { 
+                            this.introSection.style.display = 'none'; 
+                        }, 1000);
+                    }
+                });
+            }
+        }
+
+        // 초기화
+        window.addEventListener('load', () => {
+            new SamuraiIntro();
+        });
+    </script>
+</body>
+</html>
